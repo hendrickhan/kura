@@ -75,7 +75,6 @@ public class TabTcpIpUi extends Composite implements NetworkTab {
     private static final String IPV4_STATUS_LAN = GwtNetIfStatus.netIPv4StatusEnabledLAN.name();
     private static final String IPV4_STATUS_LAN_MESSAGE = MessageUtils.get(IPV4_STATUS_LAN);
     private static final String IPV4_STATUS_UNMANAGED = GwtNetIfStatus.netIPv4StatusUnmanaged.name();
-    private static final String IPV4_STATUS_UNMANAGED_MESSAGE = MessageUtils.get(IPV4_STATUS_UNMANAGED);
     private static final String IPV4_STATUS_DISABLED = GwtNetIfStatus.netIPv4StatusDisabled.name();
     private static final String IPV4_STATUS_DISABLED_MESSAGE = MessageUtils.get(IPV4_STATUS_DISABLED);
 
@@ -92,7 +91,7 @@ public class TabTcpIpUi extends Composite implements NetworkTab {
     }
 
     GwtSession session;
-    boolean m_dirty;
+    boolean dirty;
     GwtNetInterfaceConfig selectedNetIfConfig;
     NetworkTabsUi tabs;
 
@@ -197,19 +196,22 @@ public class TabTcpIpUi extends Composite implements NetworkTab {
 
     @Override
     public void setDirty(boolean flag) {
-        this.m_dirty = flag;
+        this.dirty = flag;
     }
 
     @Override
     public boolean isDirty() {
-        return this.m_dirty;
+        return this.dirty;
     }
 
     @Override
     public void setNetInterface(GwtNetInterfaceConfig config) {
         setDirty(true);
+        if (config == null) {
+            return;
+        }
 
-        if (config != null && config.getSubnetMask() != null && config.getSubnetMask().equals("255.255.255.255")) {
+        if (config.getSubnetMask() != null && config.getSubnetMask().equals("255.255.255.255")) {
             config.setSubnetMask("");
         }
 
@@ -219,7 +221,7 @@ public class TabTcpIpUi extends Composite implements NetworkTab {
         logger.fine(this.selectedNetIfConfig.getIpAddress());
 
         // Remove LAN option for modems
-        if (this.selectedNetIfConfig != null && this.selectedNetIfConfig.getHwTypeEnum() == GwtNetIfType.MODEM) {
+        if (this.selectedNetIfConfig.getHwTypeEnum() == GwtNetIfType.MODEM) {
             if (this.status != null) {
                 for (int i = 0; i < this.status.getItemCount(); i++) {
                     if (this.status.getItemText(i).equals(IPV4_STATUS_LAN_MESSAGE)) {
@@ -378,21 +380,17 @@ public class TabTcpIpUi extends Composite implements NetworkTab {
         }
 
         // Populate status list
+        this.status.clear();
         if (this.selectedNetIfConfig != null && this.selectedNetIfConfig.getHwTypeEnum() == GwtNetIfType.MODEM) {
-            if (this.status != null) {
-                this.status.clear();
-                this.status.addItem(MessageUtils.get("netIPv4StatusDisabled"));
-                this.status.addItem(MessageUtils.get("netIPv4StatusUnmanaged"));
-                this.status.addItem(MessageUtils.get("netIPv4StatusEnabledWAN"));
-            }
+            this.status.addItem(MessageUtils.get("netIPv4StatusDisabled"));
+            this.status.addItem(MessageUtils.get("netIPv4StatusUnmanaged"));
+            this.status.addItem(MessageUtils.get("netIPv4StatusEnabledWAN"));
+
         } else {
-            if (this.status != null) {
-                this.status.clear();
-                this.status.addItem(MessageUtils.get("netIPv4StatusDisabled"));
-                this.status.addItem(MessageUtils.get("netIPv4StatusUnmanaged"));
-                this.status.addItem(MessageUtils.get("netIPv4StatusEnabledLAN"));
-                this.status.addItem(MessageUtils.get("netIPv4StatusEnabledWAN"));
-            }
+            this.status.addItem(MessageUtils.get("netIPv4StatusDisabled"));
+            this.status.addItem(MessageUtils.get("netIPv4StatusUnmanaged"));
+            this.status.addItem(MessageUtils.get("netIPv4StatusEnabledLAN"));
+            this.status.addItem(MessageUtils.get("netIPv4StatusEnabledWAN"));
         }
 
         // SetTooltips
@@ -530,7 +528,7 @@ public class TabTcpIpUi extends Composite implements NetworkTab {
             public void onBlur(BlurEvent event) {
                 setDirty(true);
                 if (!TabTcpIpUi.this.ip.getText().trim().matches(FieldType.IPv4_ADDRESS.getRegex())
-                        || !(TabTcpIpUi.this.ip.getText().trim().length() > 0)) {
+                        || TabTcpIpUi.this.ip.getText().trim().length() == 0) {
                     TabTcpIpUi.this.groupIp.setValidationState(ValidationState.ERROR);
                     TabTcpIpUi.this.helpIp.setText(MSGS.netIPv4InvalidAddress());
                 } else {
@@ -654,17 +652,6 @@ public class TabTcpIpUi extends Composite implements NetworkTab {
                     TabTcpIpUi.this.groupDns.setValidationState(ValidationState.NONE);
                     TabTcpIpUi.this.helpDns.setText("");
                 }
-
-                /*
-                 * if (!TabTcpIpUi.this.dns.getText().trim().matches(FieldType.IPv4_ADDRESS.getRegex())
-                 * && TabTcpIpUi.this.dns.getText().trim().length() > 0) {
-                 * TabTcpIpUi.this.groupDns.setValidationState(ValidationState.ERROR);
-                 * TabTcpIpUi.this.helpDns.setText(MSGS.netIPv4InvalidAddress());
-                 * } else {
-                 * TabTcpIpUi.this.groupDns.setValidationState(ValidationState.NONE);
-                 * TabTcpIpUi.this.helpDns.setText("");
-                 * }
-                 */
             }
         });
 
@@ -829,7 +816,6 @@ public class TabTcpIpUi extends Composite implements NetworkTab {
                 } else {
                     this.ip.setEnabled(true);
                     this.subnet.setEnabled(true);
-                    // this.gateway.setEnabled(true);
 
                     if (this.status.getSelectedValue().equals(IPV4_STATUS_WAN_MESSAGE)) {
                         this.gateway.setEnabled(true);
@@ -843,10 +829,6 @@ public class TabTcpIpUi extends Composite implements NetworkTab {
                     }
                     this.renew.setEnabled(false);
                 }
-                /*
-                 * this.dns.setEnabled(true);
-                 * this.search.setEnabled(true);
-                 */
             }
         }
 
